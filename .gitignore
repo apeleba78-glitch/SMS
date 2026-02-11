@@ -1,0 +1,31 @@
+# 환경 변수 (Supabase 키 등 - 절대 커밋 금지)
+.env
+.env.local
+.env.*.local
+
+# 의존성
+node_modules/
+
+# 빌드 결과물
+.next/
+out/
+dist/
+build/
+.vercel
+
+# 로그/캐시
+*.log
+.cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 기타
+*.local
