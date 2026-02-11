@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { useEffectiveRole } from '@/lib/RolePreviewContext';
+import { canReceiveIssue } from '@/lib/roles';
+import { DEFAULT_CHURCH_ID } from '@/lib/constants';
 
 type IssueRow = {
   id: string;
@@ -26,6 +29,7 @@ const STATUS_LABEL: Record<string, string> = {
 export default function RoomIssuesPage() {
   const params = useParams();
   const roomId = params.id as string;
+  const role = useEffectiveRole(DEFAULT_CHURCH_ID);
   const [roomName, setRoomName] = useState('');
   const [list, setList] = useState<IssueRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,11 +70,13 @@ export default function RoomIssuesPage() {
           </Link>
         ))
       )}
-      <div style={{ marginTop: 16 }}>
-        <Link href={`/room/${roomId}/issue/new`} className="btnPrimary" style={{ display: 'block', textAlign: 'center' }}>
-          이슈 접수
-        </Link>
-      </div>
+      {canReceiveIssue(role) && (
+        <div style={{ marginTop: 16 }}>
+          <Link href={`/room/${roomId}/issue/new`} className="btnPrimary" style={{ display: 'block', textAlign: 'center' }}>
+            이슈 접수
+          </Link>
+        </div>
+      )}
     </>
   );
 }

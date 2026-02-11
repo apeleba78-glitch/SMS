@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
+import { DEFAULT_CHURCH_ID } from '@/lib/constants';
 
 type Floor = { id: string; name: string; sort_order: number };
-
-const DEFAULT_CHURCH_ID = 'a0000001-0000-0000-0000-000000000001';
 
 const TIMEOUT_MSG = 'Supabase 연결이 되지 않습니다. 1) Supabase SQL Editor에서 RLS 정책(20260214000000_rls_policies_anon_read.sql) 실행 2) 시드(seed.sql) 실행 3) .env.local의 URL·키 확인 4) 터미널에서 서버 재시작(npm run dev) 후 새로고침';
 

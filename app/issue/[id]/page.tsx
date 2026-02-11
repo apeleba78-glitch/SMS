@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import { processIssueImage } from '@/lib/imageProcess';
+import { useEffectiveRole } from '@/lib/RolePreviewContext';
+import { canConfirmIssue, canProgressIssue, canResolveIssue, canRejectIssue } from '@/lib/roles';
+import { DEFAULT_CHURCH_ID } from '@/lib/constants';
 
 type IssueDetail = {
   id: string;
@@ -43,6 +46,7 @@ const ACTIVITY_KIND_LABEL: Record<string, string> = {
 export default function IssueDetailPage() {
   const params = useParams();
   const issueId = params.id as string;
+  const role = useEffectiveRole(DEFAULT_CHURCH_ID);
   const [detail, setDetail] = useState<IssueDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +124,7 @@ export default function IssueDetailPage() {
   if (!detail) return <p className="card">이슈를 찾을 수 없습니다.</p>;
 
   const canAct = detail.status !== 'resolved' && detail.status !== 'rejected';
+  const canActAny = canAct && (canConfirmIssue(role) || canProgressIssue(role) || canResolveIssue(role) || canRejectIssue(role));
 
   return (
     <>
@@ -174,33 +179,41 @@ export default function IssueDetailPage() {
         </div>
       )}
 
-      {canAct && (
+      {canActAny && (
         <div className="card">
           <p style={{ marginBottom: 8, fontSize: 14 }}>상태 변경</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {detail.status === 'received' && (
+            {detail.status === 'received' && canConfirmIssue(role) && (
               <button type="button" className="btnPrimary" onClick={doConfirm} disabled={actionLoading}>확인</button>
             )}
-            {(detail.status === 'received' || detail.status === 'confirmed') && (
+            {(detail.status === 'received' || detail.status === 'confirmed') && canProgressIssue(role) && (
               <button type="button" className="btnPrimary" style={{ background: 'var(--color-progress)' }} onClick={doProgress} disabled={actionLoading}>완료 처리</button>
             )}
-            <label style={{ fontSize: 14 }}>해결 완료 시 After 사진 (선택)</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setAfterFile(e.target.files?.[0] ?? null)}
-              style={{ marginTop: 4 }}
-            />
-            <button type="button" className="btnPrimary" style={{ background: 'var(--color-done)' }} onClick={doResolve} disabled={actionLoading}>해결 완료</button>
-            <label style={{ fontSize: 14, marginTop: 4 }}>반려 사유 (취소 시 선택)</label>
-            <input
-              type="text"
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="입력 시 취소 버튼으로 반려"
-              style={{ padding: 12, borderRadius: 14, border: '1px solid #e5e5e5' }}
-            />
-            <button type="button" className="btnPrimary" style={{ background: 'var(--color-neutral)' }} onClick={doReject} disabled={actionLoading}>취소</button>
+            {canResolveIssue(role) && (
+              <>
+                <label style={{ fontSize: 14 }}>해결 완료 시 After 사진 (선택)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setAfterFile(e.target.files?.[0] ?? null)}
+                  style={{ marginTop: 4 }}
+                />
+                <button type="button" className="btnPrimary" style={{ background: 'var(--color-done)' }} onClick={doResolve} disabled={actionLoading}>해결 완료</button>
+              </>
+            )}
+            {canRejectIssue(role) && (
+              <>
+                <label style={{ fontSize: 14, marginTop: 4 }}>반려 사유 (취소 시 선택)</label>
+                <input
+                  type="text"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="입력 시 취소 버튼으로 반려"
+                  style={{ padding: 12, borderRadius: 14, border: '1px solid #e5e5e5' }}
+                />
+                <button type="button" className="btnPrimary" style={{ background: 'var(--color-neutral)' }} onClick={doReject} disabled={actionLoading}>취소</button>
+              </>
+            )}
           </div>
         </div>
       )}

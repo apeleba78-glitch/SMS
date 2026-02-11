@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Header from './components/Header';
+import Providers from './Providers';
 
 export const metadata: Metadata = {
   title: '공간 관리',
@@ -16,8 +17,10 @@ export default function RootLayout({
     <html lang="ko">
       <body>
         <div className="app">
-          <Header />
-          <main>{children}</main>
+          <Providers>
+            <Header />
+            <main>{children}</main>
+          </Providers>
         </div>
       </body>
     </html>

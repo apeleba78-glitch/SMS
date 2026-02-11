@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { useEffectiveRole } from '@/lib/RolePreviewContext';
+import { canManageSupply, canReceiveIssue } from '@/lib/roles';
+import { DEFAULT_CHURCH_ID } from '@/lib/constants';
 
 type RoomDetail = {
   room_id: string;
@@ -40,6 +43,7 @@ function todayISO(): string {
 export default function RoomDetailPage() {
   const params = useParams();
   const roomId = params.id as string;
+  const role = useEffectiveRole(DEFAULT_CHURCH_ID);
   const [detail, setDetail] = useState<RoomDetail | null>(null);
   const [shortages, setShortages] = useState<SupplyShortage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,55 +166,57 @@ export default function RoomDetailPage() {
           </span>
         </div>
       </div>
-      <div className="card" style={{ marginTop: 16 }}>
-        <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>부족 비품</h2>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {shortages.length === 0 ? (
-            <li style={{ padding: '8px 0', color: 'var(--color-neutral)', fontSize: 14 }}>등록된 부족 비품 없음</li>
-          ) : (
-            shortages.map((s) => (
-              <li
-                key={s.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 0',
-                  borderBottom: '1px solid #f0f0f0',
-                  gap: 8,
-                }}
-              >
-                <span>{s.item_name}</span>
-                {s.resolved_at ? (
-                  <span className="cardBadge done">해제</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="btnPrimary"
-                    onClick={() => resolveShortage(s.id)}
-                    disabled={actionLoading}
-                  >
-                    해제
-                  </button>
-                )}
-              </li>
-            ))
-          )}
-        </ul>
-        <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            placeholder="비품명"
-            style={{ flex: 1, minWidth: 120, padding: 12, borderRadius: 14, border: '1px solid #e5e5e5' }}
-            aria-label="부족 비품명"
-          />
-          <button type="button" className="btnPrimary" onClick={addShortage} disabled={actionLoading || !newItemName.trim()}>
-            저장
-          </button>
+      {canManageSupply(role) && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>부족 비품</h2>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {shortages.length === 0 ? (
+              <li style={{ padding: '8px 0', color: 'var(--color-neutral)', fontSize: 14 }}>등록된 부족 비품 없음</li>
+            ) : (
+              shortages.map((s) => (
+                <li
+                  key={s.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 0',
+                    borderBottom: '1px solid #f0f0f0',
+                    gap: 8,
+                  }}
+                >
+                  <span>{s.item_name}</span>
+                  {s.resolved_at ? (
+                    <span className="cardBadge done">해제</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btnPrimary"
+                      onClick={() => resolveShortage(s.id)}
+                      disabled={actionLoading}
+                    >
+                      해제
+                    </button>
+                  )}
+                </li>
+              ))
+            )}
+          </ul>
+          <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder="비품명"
+              style={{ flex: 1, minWidth: 120, padding: 12, borderRadius: 14, border: '1px solid #e5e5e5' }}
+              aria-label="부족 비품명"
+            />
+            <button type="button" className="btnPrimary" onClick={addShortage} disabled={actionLoading || !newItemName.trim()}>
+              저장
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card" style={{ marginTop: 16 }}>
         <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>오늘 예약</h2>
@@ -261,9 +267,11 @@ export default function RoomDetailPage() {
         <Link href={`/room/${roomId}/issues`} className="btnPrimary" style={{ display: 'block', textAlign: 'center' }}>
           이슈 목록
         </Link>
-        <Link href={`/room/${roomId}/issue/new`} className="btnSecondary">
-          이슈 접수
-        </Link>
+        {canReceiveIssue(role) && (
+          <Link href={`/room/${roomId}/issue/new`} className="btnSecondary">
+            이슈 접수
+          </Link>
+        )}
       </div>
     </>
   );

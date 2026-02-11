@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
+import { useEffectiveRole } from '@/lib/RolePreviewContext';
+import { canCompleteCleaning } from '@/lib/roles';
+import { DEFAULT_CHURCH_ID } from '@/lib/constants';
 
 type RoomCard = {
   room_id: string;
@@ -34,6 +37,7 @@ function todayISO(): string {
 export default function FloorPage() {
   const params = useParams();
   const floorId = params.id as string;
+  const role = useEffectiveRole(DEFAULT_CHURCH_ID);
   const [floorName, setFloorName] = useState<string>('');
   const [rooms, setRooms] = useState<RoomCard[]>([]);
   const [cleaningTasks, setCleaningTasks] = useState<TodayCleaningTask[]>([]);
@@ -116,7 +120,7 @@ export default function FloorPage() {
                 <span>{t.room_name}</span>
                 {t.completed_at ? (
                   <span className="cardBadge done">완료 {new Date(t.completed_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
-                ) : (
+                ) : canCompleteCleaning(role) ? (
                   <button
                     type="button"
                     className="btnPrimary"
@@ -125,7 +129,7 @@ export default function FloorPage() {
                   >
                     완료 처리
                   </button>
-                )}
+                ) : null}
               </li>
             ))}
           </ul>
