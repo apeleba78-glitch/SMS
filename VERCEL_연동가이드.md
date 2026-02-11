@@ -21,6 +21,13 @@ GitHub 저장소를 Vercel에 연결하면 푸시할 때마다 자동 배포됩�
 
 ---
 
+## 2-2. Next.js 프로젝트 설정 확인
+
+- **Framework Preset**: Next.js 로 자동 감지되어야 합니다. (프로젝트 루트에 `vercel.json` 에 `"framework": "next"` 가 있으면 명시됨)
+- **Output Directory**: 비워 두세요. Next.js 는 `.next` 를 사용하므로 `public` 등으로 설정하면 배포 오류가 납니다.
+
+---
+
 ## 3단계: 환경 변수 추가 (Supabase)
 
 배포 설정 화면에서 **Environment Variables** 섹션으로 이동한 뒤 아래 두 개 추가:
