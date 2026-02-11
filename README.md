@@ -1,5 +1,19 @@
 # SMS 프로젝트 - 개발 환경 가이드
 
+## Phase 1 완료
+
+**교회 → 층 → 공간 목록 조회** 구현 완료. 시드 데이터(`supabase/seed.sql`) 적용 후 `npm install` → `npm run dev`로 웹앱 실행. 자세한 내용은 `docs/PHASE1_완료.md` 참고.
+
+## Phase 2 완료
+
+**공간 카드 4요소**(청소 상태, 미해결 이슈 수, 점검 완료율, 부족 비품 수) 표시 및 **room_status** 연동. 한 화면 한 API(`rpc_floor_room_cards`, `rpc_room_detail`). 마이그레이션 `20260212000000_phase2_rpc_room_detail_and_cards.sql` 적용 후 사용. `docs/PHASE2_완료.md` 참고.
+
+## Phase 3 완료
+
+**이슈(문제) 관리 핵심**: 접수→확인→처리중→해결완료/반려, 담당자·시간·활동 로그, 이벤트 기반 `room_status.open_issue_count` 갱신. 마이그레이션 `20260213000000_phase3_issue_management.sql` 적용. `docs/PHASE3_완료.md` 참고.
+
+---
+
 ## 현재 시스템 상태
 
 | 도구 | 상태 |
