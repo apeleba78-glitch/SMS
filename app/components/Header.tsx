@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useRolePreviewContext } from '@/lib/RolePreviewContext';
+import { useEffectiveRole } from '@/lib/RolePreviewContext';
+import { DEFAULT_CHURCH_ID } from '@/lib/constants';
 import type { ChurchRole } from '@/lib/roles';
 
 const ROLE_OPTIONS: { value: ChurchRole | ''; label: string }[] = [
@@ -17,11 +19,17 @@ export default function Header() {
   const ctx = useRolePreviewContext();
   const previewRole = ctx?.previewRole ?? null;
   const setPreviewRole = ctx?.setPreviewRole;
+  const role = useEffectiveRole(DEFAULT_CHURCH_ID);
 
   return (
     <header className="appHeader">
       <Link href="/" className="appHeaderTitle">공간 관리</Link>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {role === 'admin' && (
+          <Link href="/settings" className="btnSecondary" style={{ width: 'auto', padding: '6px 12px', fontSize: 12, lineHeight: 1.4 }}>
+            설정
+          </Link>
+        )}
         {setPreviewRole && (
           <select
             value={previewRole ?? ''}
