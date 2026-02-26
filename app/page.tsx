@@ -3,19 +3,18 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
-import { DEFAULT_CHURCH_ID } from '@/lib/constants';
 
-type Floor = { id: string; name: string; sort_order: number };
+type Church = { id: string; name: string };
 
 const TIMEOUT_MSG = 'Supabase 연결이 되지 않습니다. 1) Supabase SQL Editor에서 RLS 정책(20260214000000_rls_policies_anon_read.sql) 실행 2) 시드(seed.sql) 실행 3) .env.local의 URL·키 확인 4) 터미널에서 서버 재시작(npm run dev) 후 새로고침';
 
 export default function HomePage() {
-  const [floors, setFloors] = useState<Floor[]>([]);
+  const [churches, setChurches] = useState<Church[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showStuckButton, setShowStuckButton] = useState(false);
 
-  const fetchFloors = () => {
+  const fetchChurches = () => {
     setLoading(true);
     setError(null);
     setShowStuckButton(false);
@@ -40,10 +39,9 @@ export default function HomePage() {
 
     const supabase = createClient();
     supabase
-      .from('floor')
-      .select('id, name, sort_order')
-      .eq('church_id', DEFAULT_CHURCH_ID)
-      .order('sort_order')
+      .from('church')
+      .select('id, name')
+      .order('name')
       .then(({ data, error: e }) => {
         if (done) return;
         done = true;
@@ -54,7 +52,7 @@ export default function HomePage() {
           setError(e.message);
           return;
         }
-        setFloors((data as Floor[]) ?? []);
+        setChurches((data as Church[]) ?? []);
       })
       .then(undefined, (err: unknown) => {
         if (done) return;
@@ -72,7 +70,7 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    const cleanup = fetchFloors();
+    const cleanup = fetchChurches();
     return () => { if (typeof cleanup === 'function') cleanup(); };
   }, []);
 
@@ -100,7 +98,7 @@ export default function HomePage() {
       <p style={{ fontSize: 14, color: 'var(--color-neutral)', marginBottom: 12 }}>
         체크: 1) .env.local 2) Supabase RLS 정책 SQL 실행 3) seed.sql 실행 4) 서버 재시작
       </p>
-      <button type="button" className="btnPrimary" onClick={fetchFloors}>
+      <button type="button" className="btnPrimary" onClick={fetchChurches}>
         다시 시도
       </button>
     </div>
@@ -111,18 +109,19 @@ export default function HomePage() {
       <div className="testFlowCard">
         <strong>테스트 흐름</strong>
         <ol>
-          <li>아래에서 <strong>층</strong> 선택 → 해당 층 <strong>공간 카드</strong>(청소·이슈·점검·비품) 확인</li>
-          <li>공간 카드 클릭 → <strong>공간 상세</strong> → 「이슈 목록」 또는 「이슈 접수」</li>
-          <li>이슈 접수: 유형·설명 입력 후 <strong>저장</strong> → 이슈 상세에서 <strong>확인 / 완료 처리 / 해결 완료 / 취소</strong> 동작 확인</li>
+          <li>아래에서 <strong>건물</strong> 선택 → 해당 건물 <strong>층 목록</strong> → 층 선택 시 <strong>공간 카드</strong></li>
+          <li>공간 카드 클릭 → <strong>공간 상세</strong> → 이슈·비품·예약·청소 확인</li>
         </ol>
       </div>
-      <h1 className="pageTitle">층 선택</h1>
-      {floors.length === 0 ? (
-        <p className="card">등록된 층이 없습니다. Supabase에 시드 데이터(supabase/seed.sql)를 적용해 주세요.</p>
+      <h1 className="pageTitle">건물 선택</h1>
+      {churches.length === 0 ? (
+        <p className="card">
+          등록된 건물이 없습니다. <strong>설정</strong>(총관리자)에서 건물을 추가하거나, Supabase에 시드(supabase/seed.sql)를 적용해 주세요.
+        </p>
       ) : (
-        floors.map((f) => (
-          <Link key={f.id} href={`/floor/${f.id}`} className="cardLink">
-            {f.name}
+        churches.map((c) => (
+          <Link key={c.id} href={`/church/${c.id}`} className="cardLink">
+            {c.name}
           </Link>
         ))
       )}

@@ -3,31 +3,34 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
-import { DEFAULT_CHURCH_ID } from '@/lib/constants';
 
-type Floor = { id: string; name: string; sort_order: number };
+type Church = { id: string; name: string; timezone: string };
 
 export default function SettingsPage() {
-  const [floors, setFloors] = useState<Floor[]>([]);
+  const [churches, setChurches] = useState<Church[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const TIMEZONE_KO = 'Asia/Seoul';
 
   function load() {
     const supabase = createClient();
     supabase
-      .from('floor')
-      .select('id, name, sort_order')
-      .eq('church_id', DEFAULT_CHURCH_ID)
-      .order('sort_order')
+      .from('church')
+      .select('id, name, timezone')
+      .order('name')
       .then(({ data, error: e }) => {
         setLoading(false);
         if (e) {
           setError(e.message);
           return;
         }
-        setFloors((data as Floor[]) ?? []);
+        setChurches((data as Church[]) ?? []);
       });
   }
 
@@ -35,15 +38,14 @@ export default function SettingsPage() {
     load();
   }, []);
 
-  async function addFloor() {
+  async function addChurch() {
     const name = newName.trim();
     if (!name) return;
     setAdding(true);
     const supabase = createClient();
-    const { error: e } = await supabase.rpc('rpc_admin_floor_create', {
-      p_church_id: DEFAULT_CHURCH_ID,
+    const { error: e } = await supabase.rpc('rpc_admin_church_create', {
       p_name: name,
-      p_sort_order: floors.length,
+      p_timezone: TIMEZONE_KO,
     });
     setAdding(false);
     if (e) {
@@ -51,6 +53,36 @@ export default function SettingsPage() {
       return;
     }
     setNewName('');
+    load();
+  }
+
+  function startEdit(c: Church) {
+    setEditingId(c.id);
+    setEditName(c.name);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditName('');
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    const name = editName.trim();
+    if (!name) return;
+    setSaving(true);
+    const supabase = createClient();
+    const { error: e } = await supabase.rpc('rpc_admin_church_update', {
+      p_church_id: editingId,
+      p_name: name,
+      p_timezone: TIMEZONE_KO,
+    });
+    setSaving(false);
+    if (e) {
+      setError(e.message);
+      return;
+    }
+    cancelEdit();
     load();
   }
 
@@ -62,27 +94,56 @@ export default function SettingsPage() {
       <Link href="/" className="backLink">← 홈</Link>
       <h1 className="pageTitle">설정 (총관리자)</h1>
       <div className="card">
-        <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>층 관리</h2>
+        <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>건물(교회) 관리</h2>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {floors.map((f) => (
-            <li key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f0f0f0' }}>
-              <Link href={`/settings/floor/${f.id}`} style={{ fontWeight: 500 }}>{f.name}</Link>
-              <span style={{ fontSize: 12, color: 'var(--color-neutral)' }}>공간 설정 →</span>
+          {churches.map((c) => (
+            <li key={c.id} style={{ padding: '10px 0', borderBottom: '1px solid #f0f0f0' }}>
+              {editingId === c.id ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="건물 이름"
+                    style={{ flex: 1, minWidth: 120, padding: 10, borderRadius: 12, border: '1px solid #e5e5e5' }}
+                    aria-label="건물 이름"
+                  />
+                  <button type="button" className="btnPrimary" style={{ width: 'auto' }} onClick={saveEdit} disabled={saving || !editName.trim()}>
+                    저장
+                  </button>
+                  <button type="button" className="btnSecondary" style={{ width: 'auto' }} onClick={cancelEdit} disabled={saving}>
+                    취소
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <Link href={`/settings/church/${c.id}`} style={{ fontWeight: 500 }}>{c.name}</Link>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button type="button" onClick={() => startEdit(c)} style={{ fontSize: 12, color: 'var(--color-progress)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                      수정
+                    </button>
+                    <span style={{ fontSize: 12, color: 'var(--color-neutral)' }}>층 관리 →</span>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
-        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="층 이름 (예: 1층)"
-            style={{ flex: 1, padding: 12, borderRadius: 14, border: '1px solid #e5e5e5' }}
-            aria-label="층 이름"
-          />
-          <button type="button" className="btnPrimary" style={{ width: 'auto' }} onClick={addFloor} disabled={adding || !newName.trim()}>
-            층 추가
-          </button>
+        <div style={{ marginTop: 12 }}>
+          <label style={{ fontSize: 12, color: 'var(--color-neutral)' }}>건물 추가</label>
+          <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="건물 이름 (예: 본당, 교육관)"
+              style={{ flex: 1, minWidth: 140, padding: 12, borderRadius: 14, border: '1px solid #e5e5e5' }}
+              aria-label="건물 이름"
+            />
+            <button type="button" className="btnPrimary" style={{ width: 'auto' }} onClick={addChurch} disabled={adding || !newName.trim()}>
+              건물 추가
+            </button>
+          </div>
         </div>
       </div>
     </>
